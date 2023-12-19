@@ -36,7 +36,6 @@ export default function GoJSWrapper(props: any) {
 
   const handleDocletTypeDrop = (
     newNode: go.ObjectData,
-    targetNode: go.Part,
     dModel: go.GraphLinksModel,
     diagram: go.Diagram,
   ) => {
@@ -44,11 +43,6 @@ export default function GoJSWrapper(props: any) {
 
     let linkToRemove: any;
     let nextNode: any;
-
-    /* 
-		This Target Node should ALWAYS be the Node where the Drop occured.
-		*/
-    setOutput(targetNode.data);
 
     linkToRemove = dModel.linkDataArray[0];
     nextNode = dModel.nodeDataArray[1];
@@ -89,7 +83,12 @@ export default function GoJSWrapper(props: any) {
     // NULL check
     if (!targetNode || !newNode) return;
 
-    handleDocletTypeDrop(newNode.data, targetNode, dModel, diagram);
+    /* 
+		This Target Node should ALWAYS be the Node where the Drop occured.
+		*/
+    setOutput(targetNode.data);
+
+    handleDocletTypeDrop(newNode.data, dModel, diagram);
   };
 
   // Destructure Templates
