@@ -1,3 +1,5 @@
+- Source code from https://github.com/NorthwoodsSoftware/gojs-react-samples/tree/main/gojs-react-palette-hooks-js
+- Converted to TS.
 - `npm install`
 - `npm start` (runs in port 4001).
 
