@@ -6,12 +6,14 @@ import { useImmer } from "use-immer";
 import * as go from "gojs";
 import GoJSWrapper from "./components/GoJSWrapper";
 import { diagramDataInit } from "./components/dataSource/diagramData";
+import { paletteDataInit } from "./components/dataSource/paletteData";
 import "./App.css";
 
 export default function App() {
   const [diagramData, updateDiagramData] = useImmer({
-    nodeDataArray: diagramDataInit.nodeDataArray,
     linkDataArray: diagramDataInit.linkDataArray,
+    nodeDataArray: diagramDataInit.nodeDataArray,
+    paletteData: paletteDataInit,
     selectedData: null,
     skipsDiagramUpdate: false,
   });
@@ -80,74 +82,87 @@ export default function App() {
     const modifiedLinkMap = new Map();
 
     updateDiagramData((draft: any) => {
-      let narr = draft.nodeDataArray;
+      let nodeDataArray = draft.nodeDataArray;
+
       if (modifiedNodeData) {
-        modifiedNodeData.forEach((nd: any) => {
-          modifiedNodeMap.set(nd.key, nd);
-          const idx = mapNodeKeyIdx.get(nd.key);
+        modifiedNodeData.forEach((node: any) => {
+          modifiedNodeMap.set(node.key, node);
+          const idx = mapNodeKeyIdx.get(node.key);
+
           if (idx !== undefined && idx >= 0) {
-            narr[idx] = nd;
-            if (draft.selectedData && draft.selectedData.key === nd.key) {
-              draft.selectedData = nd;
+            nodeDataArray[idx] = node;
+            if (draft.selectedData && draft.selectedData.key === node.key) {
+              draft.selectedData = node;
             }
           }
         });
       }
+
       if (insertedNodeKeys) {
         insertedNodeKeys.forEach((key: any) => {
-          const nd = modifiedNodeMap.get(key);
+          const node = modifiedNodeMap.get(key);
           const idx = mapNodeKeyIdx.get(key);
-          if (nd && idx === undefined) {
+
+          if (node && idx === undefined) {
             // nodes won't be added if they already exist
-            mapNodeKeyIdx.set(nd.key, narr.length);
-            narr.push(nd);
+            mapNodeKeyIdx.set(node.key, nodeDataArray.length);
+            nodeDataArray.push(node);
           }
         });
       }
+
       if (removedNodeKeys) {
-        narr = narr.filter((nd: any) => {
+        nodeDataArray = nodeDataArray.filter((nd: any) => {
           if (removedNodeKeys.includes(nd.key)) {
             return false;
           }
           return true;
         });
-        draft.nodeDataArray = narr;
-        refreshNodeIndex(narr);
+
+        draft.nodeDataArray = nodeDataArray;
+        refreshNodeIndex(nodeDataArray);
       }
 
-      let larr = draft.linkDataArray;
+      let linkDataArray = draft.linkDataArray;
+
       if (modifiedLinkData) {
         modifiedLinkData.forEach((ld: any) => {
           modifiedLinkMap.set(ld.key, ld);
           const idx = mapLinkKeyIdx.get(ld.key);
+
           if (idx !== undefined && idx >= 0) {
-            larr[idx] = ld;
+            linkDataArray[idx] = ld;
+
             if (draft.selectedData && draft.selectedData.key === ld.key) {
               draft.selectedData = ld;
             }
           }
         });
       }
+
       if (insertedLinkKeys) {
         insertedLinkKeys.forEach((key: any) => {
-          const ld = modifiedLinkMap.get(key);
+          const linkData = modifiedLinkMap.get(key);
           const idx = mapLinkKeyIdx.get(key);
-          if (ld && idx === undefined) {
+
+          if (linkData && idx === undefined) {
             // links won't be added if they already exist
-            mapLinkKeyIdx.set(ld.key, larr.length);
-            larr.push(ld);
+            mapLinkKeyIdx.set(linkData.key, linkDataArray.length);
+            linkDataArray.push(linkData);
           }
         });
       }
+
       if (removedLinkKeys) {
-        larr = larr.filter((ld: any) => {
+        linkDataArray = linkDataArray.filter((ld: any) => {
           if (removedLinkKeys.includes(ld.key)) {
             return false;
           }
           return true;
         });
-        draft.linkDataArray = larr;
-        refreshLinkIndex(larr);
+
+        draft.linkDataArray = linkDataArray;
+        refreshLinkIndex(linkDataArray);
       }
 
       draft.skipsDiagramUpdate = true; // the GoJS model already knows about these updates
@@ -159,6 +174,7 @@ export default function App() {
       nodeDataArray={diagramData.nodeDataArray}
       linkDataArray={diagramData.linkDataArray}
       skipsDiagramUpdate={diagramData.skipsDiagramUpdate}
+      paletteData={diagramData.paletteData}
       onDiagramEvent={handleDiagramEvent}
       onModelChange={handleModelChange}
     />

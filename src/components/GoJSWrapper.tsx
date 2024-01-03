@@ -2,98 +2,230 @@
  *  Copyright (C) 1998-2022 by Northwoods Software Corporation. All Rights Reserved.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as go from "gojs";
 import { ReactDiagram, ReactPalette } from "gojs-react";
-import { paletteDataInit } from "./dataSource/paletteData";
-import "./GoJSWrapper.css";
 import useGoJsTemplateTemplates from "./useGoJsTemplates";
+import { GoJsNodeState } from "./dataSource/goJsNodeState";
+import "./GoJSWrapper.css";
 
 const goJsCategory = {
+  DiagramDocletType: "DiagramDocletType",
+  DocletType: "DocletType",
+  PaletteDocletGroup: "PaletteDocletGroup",
+  DocumentSection: "DocumentSection",
   DropDocletType: "DropDocletType",
+  Imports: "Imports",
+  PaletteDoclet: "PaletteDoclet",
+  PaletteDocletSearch: "PaletteDocletSearch",
+  ImportNode: "ImportNode",
   DocletTypeNode: "DocletTypeNode",
 };
 
 export default function GoJSWrapper(props: any) {
+  const {
+    paletteData,
+    onDiagramEvent,
+    nodeDataArray,
+    linkDataArray,
+    skipsDiagramUpdate,
+    onModelChange,
+  } = props;
+
   // Defined React GoJs Refs
   const diagramRef = useRef<ReactDiagram>(null);
+  const paletteRef = useRef<ReactPalette>(null);
 
-  const [output, setOutput] = useState<any>();
+  // Destructure Templates
+  const {
+    docletTypeNodes,
+    dropDocletType,
+    linkTemplate,
+    imports,
+    importNode,
+    paletteDocletGroup,
+  } = useGoJsTemplateTemplates(go);
 
-  // add/remove listeners
   useEffect(() => {
     if (diagramRef.current === null) return;
     const diagram = diagramRef.current.getDiagram();
     if (diagram instanceof go.Diagram) {
-      diagram.addDiagramListener("ChangedSelection", props.onDiagramEvent);
+      diagram.addDiagramListener("ChangedSelection", onDiagramEvent);
     }
     return () => {
       if (diagram instanceof go.Diagram) {
-        diagram.removeDiagramListener("ChangedSelection", props.onDiagramEvent);
+        diagram.removeDiagramListener("ChangedSelection", onDiagramEvent);
       }
     };
-  }, [props.onDiagramEvent]);
+  }, [onDiagramEvent]);
 
   const handleDocletTypeDrop = (
-    newNode: go.ObjectData,
-    dModel: go.GraphLinksModel,
+    newNode: go.Node,
+    targetNode: go.Node,
     diagram: go.Diagram,
+    palette: go.Palette,
   ) => {
-    diagram.startTransaction("handleDocletTypeDrop");
+    // Declare Palette and Diagram Models
+    const dModel = diagram.model as go.GraphLinksModel;
+    const pModel = palette.model as go.GraphLinksModel;
 
-    let linkToRemove: any;
-    let nextNode: any;
+    let targetLink: go.Link | null;
+    let nextNode: go.Node | null;
 
-    linkToRemove = dModel.linkDataArray[0];
-    nextNode = dModel.nodeDataArray[1];
+    diagram.startTransaction();
+    palette.startTransaction();
 
-    dModel.removeLinkData(linkToRemove);
+    if (targetNode.key === "append") {
+      targetLink = targetNode.findLinksInto().first();
+      if (!targetLink) return;
+      nextNode = targetLink.toNode;
+      if (!nextNode) return;
+    } else {
+      targetLink = targetNode.findLinksOutOf().first();
+      if (!targetLink) return;
+      nextNode = targetLink.toNode;
+      if (!nextNode) return;
+    }
 
-    dModel.addLinkDataCollection([
-      {
-        from: linkToRemove.from,
-        to: newNode.key,
-      },
-      {
-        from: newNode.key,
-        to: nextNode.key,
-      },
-    ]);
+    targetLink.toNode = newNode;
+    dModel.addLinkData({ from: newNode.data.key, to: nextNode.data.key });
 
-    diagram.commitTransaction("handleDocletTypeDrop");
+    // Change Node state in Diagram Model
+    dModel.nodeDataArray.forEach((dNode: any) => {
+      if (dNode.key === newNode.key) {
+        dModel.set(dNode, "state", GoJsNodeState.Diagram);
+      }
+    });
+
+    // Change Node state in Palette Model
+    pModel.nodeDataArray.forEach((pNode: any) => {
+      if (pNode.title === newNode.data.title) {
+        pModel.set(pNode, "state", GoJsNodeState.Copied);
+      }
+    });
+
+    diagram.commitTransaction();
+    palette.commitTransaction();
+  };
+  const handleImportNodeDrop = (
+    newNode: go.Node,
+    targetNode: go.Node,
+    diagram: go.Diagram,
+    palette: go.Palette,
+  ) => {
+    // Declare Palette and Diagram Models
+    const dModel = diagram.model as go.GraphLinksModel;
+    const pModel = palette.model as go.GraphLinksModel;
+
+    dModel.commit((m: go.Model) => {
+      m.set(targetNode, "state", GoJsNodeState.Diagram);
+
+      dModel.addLinkData({
+        from: targetNode.key,
+        to: "1f409525-7df2-4bb6-b406-3e6be8e9b347-0",
+      });
+
+      pModel.nodeDataArray.forEach((pNode: any) => {
+        if (pNode.text === targetNode.data.text) {
+          pModel.set(pNode, "state", GoJsNodeState.Copied);
+        }
+      });
+    });
+  };
+  const linkMouseDrop = (
+    newNode: go.Node,
+    targetNode: go.Node,
+    diagram: go.Diagram,
+    palette: go.Palette,
+  ) => {
+    diagram.startTransaction();
+    palette.startTransaction();
+
+    diagram.commitTransaction();
+    palette.commitTransaction();
+  };
+
+  const handleReplaceExistingNodeDrop = (
+    newNode: go.Node,
+    targetNode: go.Node,
+    diagram: go.Diagram,
+    palette: go.Palette,
+  ) => {
+    //dispatch(setSelectedTemplateNode(palette));
+
+    diagram.startTransaction();
+    palette.startTransaction();
+
+    // Declare Palette and Diagram Models
+    const dModel = diagram.model as go.GraphLinksModel;
+    const pModel = palette.model as go.GraphLinksModel;
+
+    // Remove Existing Node
+    diagram.remove(targetNode);
+
+    dModel.set(newNode, "state", GoJsNodeState.Diagram);
+
+    dModel.addLinkData({
+      from: newNode.key,
+      to: "1f409525-7df2-4bb6-b406-3e6be8e9b347-0",
+    });
+
+    pModel.nodeDataArray.forEach((pNode: any) => {
+      if (pNode.title === newNode.data.title) {
+        pModel.set(pNode, "state", GoJsNodeState.Copied);
+      }
+    });
+
+    diagram.commitTransaction();
+    palette.commitTransaction();
   };
 
   const externalObjectsDropped = (ev: go.DiagramEvent) => {
-    // Declare Diagram
+    // Declare Diagram & Palette
+    const palette: go.Palette | null | undefined =
+      paletteRef?.current?.getPalette();
+
     const diagram: go.Diagram | null | undefined =
       diagramRef?.current?.getDiagram();
 
     // NULL check
-    if (!diagram) return;
-
-    // Declare Models
-    const dModel = diagram.model as go.GraphLinksModel;
+    if (!diagram || !palette) return;
 
     // Declare Nodes
     const newNode: go.Node = ev.diagram?.selection.first() as go.Node;
     const targetNode = diagram.findPartAt(
       new go.Point(newNode.position.x, newNode.position.y),
-    ) as go.Part;
+    ) as go.Node;
 
     // NULL check
     if (!targetNode || !newNode) return;
 
-    /* 
-		This Target Node should ALWAYS be the Node where the Drop occured.
-		*/
-    setOutput(targetNode.data);
+    // Add an Import Node
+    if (newNode.category === goJsCategory.ImportNode) {
+      handleImportNodeDrop(newNode, targetNode, diagram, palette);
+      return;
+    }
 
-    handleDocletTypeDrop(newNode.data, dModel, diagram);
+    // Add a Doclet Type Node
+    if (newNode.category === goJsCategory.DocletTypeNode) {
+      switch (targetNode.category) {
+        case goJsCategory.DocletTypeNode:
+          // Replace existing Node
+          handleReplaceExistingNodeDrop(newNode, targetNode, diagram, palette);
+          break;
+
+        case goJsCategory.DropDocletType:
+          // Append or Prepend a Node
+          handleDocletTypeDrop(newNode, targetNode, diagram, palette);
+          break;
+
+        default:
+          // Add Node in a Link
+          linkMouseDrop(newNode, targetNode, diagram, palette);
+      }
+      return;
+    }
   };
-
-  // Destructure Templates
-  const { docletTypeNodes, dropDocletType, linkTemplate } =
-    useGoJsTemplateTemplates(go);
 
   function initDiagram() {
     const $ = go.GraphObject.make;
@@ -125,6 +257,8 @@ export default function GoJSWrapper(props: any) {
     // Add Node Templates
     diagram.nodeTemplateMap.add(goJsCategory.DocletTypeNode, docletTypeNodes);
     diagram.nodeTemplateMap.add(goJsCategory.DropDocletType, dropDocletType);
+    diagram.nodeTemplateMap.add(goJsCategory.Imports, imports);
+    diagram.nodeTemplateMap.add(goJsCategory.ImportNode, importNode);
 
     // Add Link Template
     diagram.linkTemplateMap.add("", linkTemplate);
@@ -141,12 +275,41 @@ export default function GoJSWrapper(props: any) {
     const $ = go.GraphObject.make;
 
     const palette = $(go.Palette, {
-      layout: $(go.TreeLayout),
+      "animationManager.isEnabled": false,
+      "commandHandler.copiesParentKey": false,
+      allowDelete: false,
+      allowDragOut: true,
+      allowTextEdit: false,
+      contentAlignment: go.Spot.TopLeft,
+      initialContentAlignment: go.Spot.TopLeft,
+      isReadOnly: false,
+      maxSelectionCount: 1,
+      padding: new go.Margin(5, 0, 0, 4),
+      layout: $(go.TreeLayout, {
+        alignment: go.TreeLayout.AlignmentStart,
+        angle: 0,
+        compaction: go.TreeLayout.CompactionNone,
+        layerSpacing: 16,
+        layerSpacingParentOverlap: 1,
+        nodeIndentPastParent: 1.0,
+        nodeSpacing: 3,
+        setsPortSpot: false,
+        setsChildPortSpot: false,
+        arrangementSpacing: new go.Size(0, 0),
+      }),
     });
 
+    // Add Node Templates
+    palette.nodeTemplateMap.add(goJsCategory.Imports, imports);
     palette.nodeTemplateMap.add(goJsCategory.DocletTypeNode, docletTypeNodes);
-    palette.nodeTemplateMap.add(goJsCategory.DropDocletType, dropDocletType);
+    palette.nodeTemplateMap.add(goJsCategory.ImportNode, importNode);
+    palette.nodeTemplateMap.add(
+      goJsCategory.PaletteDocletGroup,
+      paletteDocletGroup,
+    );
+
     palette.linkTemplate = $(go.Link);
+    palette.model = $(go.TreeModel, { nodeParentKeyProperty: "group" });
 
     return palette;
   }
@@ -154,20 +317,20 @@ export default function GoJSWrapper(props: any) {
   return (
     <div className="gojs-wrapper-div">
       <ReactPalette
+        ref={paletteRef}
         divClassName="palette-component"
         initPalette={initPalette}
-        nodeDataArray={paletteDataInit}
+        nodeDataArray={paletteData}
       />
       <ReactDiagram
         ref={diagramRef}
         divClassName="diagram-component"
         initDiagram={initDiagram}
-        nodeDataArray={props.nodeDataArray}
-        linkDataArray={props.linkDataArray}
-        onModelChange={props.onModelChange}
-        skipsDiagramUpdate={props.skipsDiagramUpdate}
+        nodeDataArray={nodeDataArray}
+        linkDataArray={linkDataArray}
+        onModelChange={onModelChange}
+        skipsDiagramUpdate={skipsDiagramUpdate}
       />
-      <output>{JSON.stringify(output)}</output>
     </div>
   );
 }

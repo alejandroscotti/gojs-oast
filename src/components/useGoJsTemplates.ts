@@ -53,11 +53,10 @@ const useGoJsTemplateTemplates = (go: any) => {
       ),
       $(
         "Button",
-        new go.Binding(
-          "visible",
-          "",
-          (ev: any) => ev.part.data.state === GoJsNodeState.Diagram,
-        ).ofObject(),
+        new go.Binding("visible", "", (ev: go.ObjectData) => {
+          console.table(ev);
+          return ev.state === GoJsNodeState.Diagram;
+        }),
         {
           width: 22,
           height: 22,
@@ -76,11 +75,12 @@ const useGoJsTemplateTemplates = (go: any) => {
 
   const linkTemplate = $(
     go.Link,
+    { layerName: "Background" },
     $(go.Shape, { isPanelMain: true, strokeWidth: 1 }),
     $(go.Shape, {
       isPanelMain: true,
       stroke: "transparent",
-      strokeWidth: 150,
+      strokeWidth: 50,
     }),
     $(go.Shape, {
       toArrow: "Feather",
@@ -118,12 +118,157 @@ const useGoJsTemplateTemplates = (go: any) => {
   );
 
   /**
+   * Document Category Bar
+   */
+  const paletteDocletGroup = $(
+    go.Node,
+    "Auto",
+    { selectionAdorned: false, width: 200, height: 35 },
+    $(go.Shape, {
+      fill: "#2e7d32",
+      strokeWidth: 0,
+      figure: "RoundedRectangle",
+      margin: new go.Margin(5, 0, 5, 0),
+    }),
+    $(
+      go.Panel,
+      "Horizontal",
+      $("TreeExpanderButton", {
+        width: 15,
+        margin: 4,
+        "ButtonBorder.fill": "white",
+        "ButtonBorder.stroke": null,
+        _treeExpandedFigure: "LineDown",
+        _treeCollapsedFigure: "LineRight",
+        _buttonFillOver: "whitesmoke",
+        _buttonStrokeOver: null,
+      }),
+      $(go.TextBlock, {
+        text: "Doclet Type Nodes",
+        font: "bold 11pt Barlow, sans-serif",
+        stroke: "white",
+        width: 180,
+        margin: new go.Margin(4, 0, 0, 2),
+      }),
+    ),
+  );
+
+  /**
+   * Imports Item
+   */
+  const imports = $(
+    go.Node,
+    "Auto",
+    { selectionAdorned: false, width: 200, height: 35 },
+    $(go.Shape, {
+      fill: "#2e7d32",
+      strokeWidth: 0,
+      figure: "RoundedRectangle",
+      margin: new go.Margin(5, 0, 5, 0),
+    }),
+    $(
+      go.Panel,
+      "Horizontal",
+      $("TreeExpanderButton", {
+        width: 15,
+        margin: 4,
+        "ButtonBorder.fill": "white",
+        "ButtonBorder.stroke": null,
+        _treeExpandedFigure: "LineDown",
+        _treeCollapsedFigure: "LineRight",
+        _buttonFillOver: "whitesmoke",
+        _buttonStrokeOver: null,
+      }),
+      $(go.TextBlock, new go.Binding("text").makeTwoWay(), {
+        font: "bold 11pt Barlow, sans-serif",
+        stroke: "white",
+        width: 180,
+        margin: new go.Margin(4, 0, 0, 2),
+      }),
+    ),
+  );
+
+  /**
+   * PCD Import Item
+   */
+  const importNode = $(
+    go.Node,
+    "Auto",
+    new go.Binding(
+      "copyable",
+      "",
+      (ev: any) => ev.state !== GoJsNodeState.Copied,
+    ),
+    {
+      defaultAlignment: go.Spot.Left,
+      selectionAdorned: false,
+      height: 25,
+    },
+    $(
+      go.Shape,
+      {
+        strokeWidth: 0,
+        figure: "RoundedRectangle",
+      },
+      new go.Binding("fill", "", (ev: any) => {
+        if (ev.state === GoJsNodeState.Copied) return "#ccc";
+
+        if (
+          ev.state === GoJsNodeState.Palette ||
+          ev.state === GoJsNodeState.Diagram
+        )
+          return "#1776D2";
+      }),
+    ),
+    $(
+      go.Panel,
+      "Horizontal",
+      $(go.Picture, {
+        width: 15,
+        height: 20,
+        margin: new go.Margin(0, 4, 0, 4),
+        imageStretch: go.GraphObject.Uniform,
+        source: "/icons/input.png",
+      }),
+      $(go.TextBlock, new go.Binding("text"), {
+        font: "bold 11pt Barlow, sans-serif",
+        stroke: "white",
+        margin: new go.Margin(4, 5, 0, 2),
+      }),
+      $(
+        "Button",
+        new go.Binding(
+          "visible",
+          "",
+          (ev: any) => ev.state === GoJsNodeState.Diagram,
+        ),
+        {
+          width: 22,
+          height: 22,
+          "ButtonBorder.stroke": null,
+          _buttonStrokeOver: null,
+          "ButtonBorder.fill": null,
+          _buttonFillOver: null,
+          click: (ev: any, obj: any) => alert("hola"),
+        },
+        $(go.Picture, {
+          desiredSize: new go.Size(17, 17),
+          source: "/icons/circle-xmark-regular-white.png",
+        }),
+      ),
+    ),
+  );
+
+  /**
    * Return All Templates
    */
   return {
     dropDocletType,
     docletTypeNodes,
     linkTemplate,
+    imports,
+    importNode,
+    paletteDocletGroup,
   };
 };
 

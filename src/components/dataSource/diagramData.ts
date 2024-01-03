@@ -42,6 +42,12 @@ export const diagramDataInit = {
       templateIndex: "-",
       title: "Communications Plan",
     },
+    {
+      category: "DropDocletType",
+      key: "append",
+      id: "append",
+      text: "Append Doclet Type",
+    },
   ],
   linkDataArray: [
     {
@@ -59,6 +65,10 @@ export const diagramDataInit = {
     {
       from: "2bb59c76-b54d-4b49-abbd-a0c6595d77bd-2",
       to: "fc386d42-4874-4e3e-bb36-2e38430a17f8-3",
+    },
+    {
+      from: "fc386d42-4874-4e3e-bb36-2e38430a17f8-3",
+      to: "append",
     },
   ],
 };
