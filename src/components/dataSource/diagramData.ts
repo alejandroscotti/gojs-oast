@@ -18,15 +18,6 @@ export const diagramDataInit = {
     {
       category: "DocletTypeNode",
       state: "Diagram",
-      key: "1f409525-7df2-4bb6-b406-3e6be8e9b347-1",
-      id: "1f409525-7df2-4bb6-b406-3e6be8e9b347",
-      tags: "",
-      templateIndex: "-",
-      title: "Description of Work",
-    },
-    {
-      category: "DocletTypeNode",
-      state: "Diagram",
       key: "2bb59c76-b54d-4b49-abbd-a0c6595d77bd-2",
       id: "2bb59c76-b54d-4b49-abbd-a0c6595d77bd",
       tags: "",
@@ -56,10 +47,6 @@ export const diagramDataInit = {
     },
     {
       from: "1f409525-7df2-4bb6-b406-3e6be8e9b347-0",
-      to: "1f409525-7df2-4bb6-b406-3e6be8e9b347-1",
-    },
-    {
-      from: "1f409525-7df2-4bb6-b406-3e6be8e9b347-1",
       to: "2bb59c76-b54d-4b49-abbd-a0c6595d77bd-2",
     },
     {
