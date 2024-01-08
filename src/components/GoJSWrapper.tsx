@@ -140,14 +140,11 @@ export default function GoJSWrapper(props: any) {
     diagram.startTransaction();
     palette.startTransaction();
 
-    // TEMP delete
-    const loc = new go.Point(1000, 1000);
-
     // Change Node state in Diagram Model
     dModel.nodeDataArray.forEach((dNode: any) => {
       if (dNode.key === newNode.key) {
         dModel.set(dNode, "state", GoJsNodeState.Diagram);
-        dModel.set(dNode, "location", loc);
+        dModel.set(dNode, "location", new go.Point(1000, 1000));
       }
     });
 
