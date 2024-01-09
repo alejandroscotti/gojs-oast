@@ -1,10 +1,6 @@
 import { GoJsNodeState } from "./dataSource/goJsNodeState";
 import * as go from "gojs";
 
-type propTypes = {
-  handlePosition?: Function;
-};
-
 const useGoJsTemplateTemplates = (go: any) => {
   const $ = go.GraphObject.make;
 
@@ -12,9 +8,6 @@ const useGoJsTemplateTemplates = (go: any) => {
     go.Node,
     "Auto",
     { movable: false },
-    new go.Binding("location", "location", go.Point.parse).makeTwoWay(
-      go.Point.stringify,
-    ),
     new go.Binding("copyable", "", (ev: go.ObjectData) => {
       return ev.state !== GoJsNodeState.Copied;
     }),
@@ -199,10 +192,9 @@ const useGoJsTemplateTemplates = (go: any) => {
   const importNode = $(
     go.Node,
     "Auto",
-    { movable: false /* isLayoutPositioned: false */ },
-    new go.Binding("location", "location", go.Point.parse).makeTwoWay(
-      go.Point.stringify,
-    ),
+    { movable: false, isLayoutPositioned: false },
+    new go.Binding("isLayoutPositioned", "isLayoutPositioned"),
+    new go.Binding("location", "location"),
     new go.Binding(
       "copyable",
       "",

@@ -111,14 +111,14 @@ export default function GoJSWrapper(props: any) {
     dModel.addLinkData({ from: newNode.data.key, to: nextNode.data.key });
 
     // Change Node state in Diagram Model
-    dModel.nodeDataArray.forEach((dNode: any) => {
+    dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
       if (dNode.key === newNode.key) {
         dModel.set(dNode, "state", GoJsNodeState.Diagram);
       }
     });
 
     // Change Node state in Palette Model
-    pModel.nodeDataArray.forEach((pNode: any) => {
+    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
       if (pNode.title === newNode.data.title) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
       }
@@ -141,15 +141,16 @@ export default function GoJSWrapper(props: any) {
     palette.startTransaction();
 
     // Change Node state in Diagram Model
-    dModel.nodeDataArray.forEach((dNode: any) => {
+    dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
       if (dNode.key === newNode.key) {
         dModel.set(dNode, "state", GoJsNodeState.Diagram);
-        dModel.set(dNode, "location", new go.Point(1000, 1000));
+        dModel.set(dNode, "location", new go.Point(-200, -200));
+        dModel.set(dNode, "isLayoutPositioned", false);
       }
     });
 
     // Change Node state in Palette Model
-    pModel.nodeDataArray.forEach((pNode: any) => {
+    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
       if (pNode.key === newNode.key) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
       }
@@ -197,7 +198,7 @@ export default function GoJSWrapper(props: any) {
       to: "1f409525-7df2-4bb6-b406-3e6be8e9b347-0",
     });
 
-    pModel.nodeDataArray.forEach((pNode: any) => {
+    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
       if (pNode.title === newNode.data.title) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
       }

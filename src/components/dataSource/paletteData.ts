@@ -16,7 +16,7 @@ export const paletteDataInit = [
     key: -1,
     state: "Palette",
     text: "PCD",
-    location: { x: 0, y: 0 },
+    isLayoutPositioned: true,
   },
   {
     category: "ImportNode",
@@ -24,7 +24,7 @@ export const paletteDataInit = [
     key: -2,
     state: "Palette",
     text: "neo4j Query",
-    location: { x: 0, y: 0 },
+    isLayoutPositioned: true,
   },
   {
     category: "ImportNode",
@@ -32,7 +32,7 @@ export const paletteDataInit = [
     key: -3,
     state: "Palette",
     text: "Python Script",
-    location: { x: 0, y: 0 },
+    isLayoutPositioned: true,
   },
   {
     category: "ImportNode",
@@ -40,7 +40,7 @@ export const paletteDataInit = [
     key: -4,
     state: "Palette",
     text: "R Script",
-    location: { x: 0, y: 0 },
+    isLayoutPositioned: true,
   },
   {
     category: "DocletTypeNode",
