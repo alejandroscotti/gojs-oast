@@ -36,6 +36,26 @@ export default function GoJSWrapper(props: any) {
   const diagramRef = useRef<ReactDiagram>(null);
   const paletteRef = useRef<ReactPalette>(null);
 
+  // Returns position of the Node
+  /* const handlePosition = (nodeData: go.ObjectData, Node: go.Node) => {
+    // Declare Diagram & Palette
+    const palette: go.Palette | null | undefined =
+      paletteRef?.current?.getPalette();
+
+    const diagram: go.Diagram | null | undefined =
+      diagramRef?.current?.getDiagram();
+
+    // NULL checks
+    if (!diagram || !palette || !nodeData || !Node) return;
+
+    if (
+      nodeData.state === GoJsNodeState.Palette &&
+      nodeData.category === goJsCategory.ImportNode
+    ) {
+      return new go.Point(1500, 1500);
+    }
+  }; */
+
   // Destructure Templates
   const {
     docletTypeNodes,
@@ -91,14 +111,14 @@ export default function GoJSWrapper(props: any) {
     dModel.addLinkData({ from: newNode.data.key, to: nextNode.data.key });
 
     // Change Node state in Diagram Model
-    dModel.nodeDataArray.forEach((dNode: any) => {
+    dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
       if (dNode.key === newNode.key) {
         dModel.set(dNode, "state", GoJsNodeState.Diagram);
       }
     });
 
     // Change Node state in Palette Model
-    pModel.nodeDataArray.forEach((pNode: any) => {
+    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
       if (pNode.title === newNode.data.title) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
       }
@@ -107,9 +127,9 @@ export default function GoJSWrapper(props: any) {
     diagram.commitTransaction();
     palette.commitTransaction();
   };
+
   const handleImportNodeDrop = (
     newNode: go.Node,
-    targetNode: go.Node,
     diagram: go.Diagram,
     palette: go.Palette,
   ) => {
@@ -117,21 +137,29 @@ export default function GoJSWrapper(props: any) {
     const dModel = diagram.model as go.GraphLinksModel;
     const pModel = palette.model as go.GraphLinksModel;
 
-    dModel.commit((m: go.Model) => {
-      m.set(targetNode, "state", GoJsNodeState.Diagram);
+    diagram.startTransaction();
+    palette.startTransaction();
 
-      dModel.addLinkData({
-        from: targetNode.key,
-        to: "1f409525-7df2-4bb6-b406-3e6be8e9b347-0",
-      });
-
-      pModel.nodeDataArray.forEach((pNode: any) => {
-        if (pNode.text === targetNode.data.text) {
-          pModel.set(pNode, "state", GoJsNodeState.Copied);
-        }
-      });
+    // Change Node state in Diagram Model
+    dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
+      if (dNode.key === newNode.key) {
+        dModel.set(dNode, "state", GoJsNodeState.Diagram);
+        dModel.set(dNode, "location", new go.Point(-200, -200));
+        dModel.set(dNode, "isLayoutPositioned", false);
+      }
     });
+
+    // Change Node state in Palette Model
+    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
+      if (pNode.key === newNode.key) {
+        pModel.set(pNode, "state", GoJsNodeState.Copied);
+      }
+    });
+
+    diagram.commitTransaction();
+    palette.commitTransaction();
   };
+
   const linkMouseDrop = (
     newNode: go.Node,
     targetNode: go.Node,
@@ -170,7 +198,7 @@ export default function GoJSWrapper(props: any) {
       to: "1f409525-7df2-4bb6-b406-3e6be8e9b347-0",
     });
 
-    pModel.nodeDataArray.forEach((pNode: any) => {
+    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
       if (pNode.title === newNode.data.title) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
       }
@@ -197,14 +225,20 @@ export default function GoJSWrapper(props: any) {
       new go.Point(newNode.position.x, newNode.position.y),
     ) as go.Node;
 
-    // NULL check
-    if (!targetNode || !newNode) return;
+    // Always delete dropped Node IF it is a Doclet Type Node drop on Canvas
+    if (!targetNode && newNode.data.category === goJsCategory.DocletTypeNode) {
+      diagram?.commandHandler?.deleteSelection();
+      return;
+    }
 
     // Add an Import Node
     if (newNode.category === goJsCategory.ImportNode) {
-      handleImportNodeDrop(newNode, targetNode, diagram, palette);
+      handleImportNodeDrop(newNode, diagram, palette);
       return;
     }
+
+    // NULL check
+    if (!targetNode) return;
 
     // Add a Doclet Type Node
     if (newNode.category === goJsCategory.DocletTypeNode) {

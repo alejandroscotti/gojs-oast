@@ -7,6 +7,7 @@ const useGoJsTemplateTemplates = (go: any) => {
   const docletTypeNodes = $(
     go.Node,
     "Auto",
+    { movable: false },
     new go.Binding("copyable", "", (ev: go.ObjectData) => {
       return ev.state !== GoJsNodeState.Copied;
     }),
@@ -53,21 +54,20 @@ const useGoJsTemplateTemplates = (go: any) => {
       ),
       $(
         "Button",
-        new go.Binding("visible", "", (ev: go.ObjectData) => {
-          console.table(ev);
-          return ev.state === GoJsNodeState.Diagram;
-        }),
+        new go.Binding(
+          "visible",
+          "",
+          (ev: go.ObjectData) => ev.state === GoJsNodeState.Diagram,
+        ),
         {
-          width: 22,
-          height: 22,
-          "ButtonBorder.stroke": null,
-          _buttonStrokeOver: null,
-          "ButtonBorder.fill": null,
-          _buttonFillOver: null,
+          column: 1,
+          "ButtonBorder.figure": "Circle",
         },
-        $(go.Picture, {
-          desiredSize: new go.Size(17, 17),
-          source: "/icons/circle-xmark-regular-black.png",
+        $(go.Shape, "XLine", {
+          width: 8,
+          height: 8,
+          fill: "white",
+          click: (ev: any, obj: any) => alert("hola"),
         }),
       ),
     ),
@@ -75,23 +75,21 @@ const useGoJsTemplateTemplates = (go: any) => {
 
   const linkTemplate = $(
     go.Link,
-    { layerName: "Background" },
+    {
+      layerName: "Background",
+      movable: false,
+      routing: go.Link.Orthogonal,
+      corner: 5,
+    },
     $(go.Shape, { isPanelMain: true, strokeWidth: 1 }),
-    $(go.Shape, {
-      isPanelMain: true,
-      stroke: "transparent",
-      strokeWidth: 50,
-    }),
-    $(go.Shape, {
-      toArrow: "Feather",
-      strokeWidth: 2,
-    }),
+    $(go.Shape, { toArrow: "OpenTriangle", strokeWidth: 1 }),
   );
 
   const dropDocletType = $(
     go.Node,
     "Auto",
     {
+      movable: false,
       mouseDragEnter: (ev: go.InputEvent, obj: go.Node) => {
         const node = obj.elt(0) as go.Shape;
         if (node) node.stroke = "#1776D2";
@@ -123,7 +121,7 @@ const useGoJsTemplateTemplates = (go: any) => {
   const paletteDocletGroup = $(
     go.Node,
     "Auto",
-    { selectionAdorned: false, width: 200, height: 35 },
+    { selectionAdorned: false, width: 200, height: 35, movable: false },
     $(go.Shape, {
       fill: "#2e7d32",
       strokeWidth: 0,
@@ -159,7 +157,7 @@ const useGoJsTemplateTemplates = (go: any) => {
   const imports = $(
     go.Node,
     "Auto",
-    { selectionAdorned: false, width: 200, height: 35 },
+    { selectionAdorned: false, width: 200, height: 35, movable: false },
     $(go.Shape, {
       fill: "#2e7d32",
       strokeWidth: 0,
@@ -189,11 +187,14 @@ const useGoJsTemplateTemplates = (go: any) => {
   );
 
   /**
-   * PCD Import Item
+   * Import Item
    */
   const importNode = $(
     go.Node,
     "Auto",
+    { movable: false, isLayoutPositioned: false },
+    new go.Binding("isLayoutPositioned", "isLayoutPositioned"),
+    new go.Binding("location", "location"),
     new go.Binding(
       "copyable",
       "",
@@ -243,17 +244,13 @@ const useGoJsTemplateTemplates = (go: any) => {
           (ev: any) => ev.state === GoJsNodeState.Diagram,
         ),
         {
-          width: 22,
-          height: 22,
-          "ButtonBorder.stroke": null,
-          _buttonStrokeOver: null,
-          "ButtonBorder.fill": null,
-          _buttonFillOver: null,
-          click: (ev: any, obj: any) => alert("hola"),
+          column: 1,
+          "ButtonBorder.figure": "Circle",
         },
-        $(go.Picture, {
-          desiredSize: new go.Size(17, 17),
-          source: "/icons/circle-xmark-regular-white.png",
+        $(go.Shape, "XLine", {
+          width: 8,
+          height: 8,
+          click: (ev: any, obj: any) => alert("hola"),
         }),
       ),
     ),
