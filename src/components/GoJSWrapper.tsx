@@ -179,8 +179,6 @@ export default function GoJSWrapper(props: any) {
     diagram: go.Diagram,
     palette: go.Palette,
   ) => {
-    //dispatch(setSelectedTemplateNode(palette));
-
     diagram.startTransaction();
     palette.startTransaction();
 
@@ -188,19 +186,37 @@ export default function GoJSWrapper(props: any) {
     const dModel = diagram.model as go.GraphLinksModel;
     const pModel = palette.model as go.GraphLinksModel;
 
-    // Remove Existing Node
-    diagram.remove(targetNode);
-
-    dModel.set(newNode, "state", GoJsNodeState.Diagram);
-
-    dModel.addLinkData({
-      from: newNode.key,
-      to: "1f409525-7df2-4bb6-b406-3e6be8e9b347-0",
+    // Find the links connected to the target node
+    const connectedLinks = targetNode.findLinksConnected();
+    const linksToUpdate: go.ObjectData = [];
+    connectedLinks.each((link: go.Link) => {
+      linksToUpdate.push({from: link.fromNode?.key, to: link.toNode?.key});
     });
 
+    // Remove Existing Node
+    diagram.remove(targetNode);
+    dModel.set(newNode, "state", GoJsNodeState.Diagram);
+
+    // Update links to connect to new node
+    linksToUpdate.forEach((link: go.ObjectData) => {
+      if (link.from === targetNode.data.key) {
+        dModel.removeLinkData(link);
+        dModel.addLinkData({ from: newNode.data.key, to: link.to });
+      } else if (link.to === targetNode.data.key) {
+        dModel.removeLinkData(link);
+        dModel.addLinkData({ from: link.from, to: newNode.data.key });
+      }
+    });
+
+    // Update Palette Model
     pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
+      // grey out the dragged node in the palette
       if (pNode.title === newNode.data.title) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
+      }
+      // mark previous node to be available in the palette
+      if (pNode.title === targetNode.data.title) {
+        pModel.set(pNode, "state", GoJsNodeState.Palette);
       }
     });
 
