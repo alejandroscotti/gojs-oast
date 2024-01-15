@@ -7,6 +7,7 @@ import * as go from "gojs";
 import { ReactDiagram, ReactPalette } from "gojs-react";
 import useGoJsTemplateTemplates from "./useGoJsTemplates";
 import { GoJsNodeState } from "./dataSource/goJsNodeState";
+import { useAlignImportNodes } from "./useAlignImportNodes";
 import "./GoJSWrapper.css";
 
 const goJsCategory = {
@@ -32,29 +33,11 @@ export default function GoJSWrapper(props: any) {
     onModelChange,
   } = props;
 
+  const { alignNodes } = useAlignImportNodes(go, goJsCategory);
+
   // Defined React GoJs Refs
   const diagramRef = useRef<ReactDiagram>(null);
   const paletteRef = useRef<ReactPalette>(null);
-
-  // Returns position of the Node
-  /* const handlePosition = (nodeData: go.ObjectData, Node: go.Node) => {
-    // Declare Diagram & Palette
-    const palette: go.Palette | null | undefined =
-      paletteRef?.current?.getPalette();
-
-    const diagram: go.Diagram | null | undefined =
-      diagramRef?.current?.getDiagram();
-
-    // NULL checks
-    if (!diagram || !palette || !nodeData || !Node) return;
-
-    if (
-      nodeData.state === GoJsNodeState.Palette &&
-      nodeData.category === goJsCategory.ImportNode
-    ) {
-      return new go.Point(1500, 1500);
-    }
-  }; */
 
   // Destructure Templates
   const {
@@ -128,7 +111,7 @@ export default function GoJSWrapper(props: any) {
     palette.commitTransaction();
   };
 
-  const handleImportNodeDrop = (
+  const handleImportNodeDrop = async (
     newNode: go.Node,
     diagram: go.Diagram,
     palette: go.Palette,
@@ -144,7 +127,7 @@ export default function GoJSWrapper(props: any) {
     dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
       if (dNode.key === newNode.key) {
         dModel.set(dNode, "state", GoJsNodeState.Diagram);
-        dModel.set(dNode, "location", new go.Point(-200, -200));
+        //dModel.set(dNode, "location", new go.Point(0, 0));
         dModel.set(dNode, "isLayoutPositioned", false);
       }
     });
@@ -155,6 +138,8 @@ export default function GoJSWrapper(props: any) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
       }
     });
+
+    await alignNodes(diagram);
 
     diagram.commitTransaction();
     palette.commitTransaction();
@@ -190,7 +175,7 @@ export default function GoJSWrapper(props: any) {
     const connectedLinks = targetNode.findLinksConnected();
     const linksToUpdate: go.ObjectData = [];
     connectedLinks.each((link: go.Link) => {
-      linksToUpdate.push({from: link.fromNode?.key, to: link.toNode?.key});
+      linksToUpdate.push({ from: link.fromNode?.key, to: link.toNode?.key });
     });
 
     // Remove Existing Node
