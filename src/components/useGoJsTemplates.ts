@@ -194,7 +194,7 @@ const useGoJsTemplateTemplates = (go: any) => {
     "Auto",
     { movable: false, isLayoutPositioned: false },
     new go.Binding("isLayoutPositioned", "isLayoutPositioned"),
-    new go.Binding("location", "location"),
+    new go.Binding("position", "position"),
     new go.Binding(
       "copyable",
       "",
