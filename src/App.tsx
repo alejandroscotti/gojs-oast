@@ -3,14 +3,28 @@
  */
 
 import { useImmer } from "use-immer";
+import { useRef, useState } from "react";
+import { ReactDiagram, ReactPalette } from "gojs-react";
 import * as go from "gojs";
+import {
+  Checkbox,
+  FormGroup,
+  FormControlLabel,
+  FormControl,
+  FormLabel,
+} from "@mui/material";
 import GoJSWrapper from "./components/GoJSWrapper";
 import { diagramDataInit } from "./components/dataSource/diagramData";
 import { paletteDataInit } from "./components/dataSource/paletteData";
+import goJsCategory from "./components/dataSource/goJsCategoryConfiguration";
 import "./App.css";
 
 export default function App() {
-  const [diagramData, updateDiagramData] = useImmer({
+  // Defined React GoJs Refs
+  const diagramRef = useRef<ReactDiagram>(null);
+  const paletteRef = useRef<ReactPalette>(null);
+
+  const [diagramData, updateDiagramData] = useImmer<any>({
     linkDataArray: diagramDataInit.linkDataArray,
     nodeDataArray: diagramDataInit.nodeDataArray,
     paletteData: paletteDataInit,
@@ -21,24 +35,25 @@ export default function App() {
   // maps for faster state modification
   const mapNodeKeyIdx = new Map();
   const mapLinkKeyIdx = new Map();
-  refreshNodeIndex(diagramData.nodeDataArray);
-  refreshLinkIndex(diagramData.linkDataArray);
 
-  function refreshNodeIndex(nodeArr: any) {
+  const refreshNodeIndex = (nodeArr: any) => {
     mapNodeKeyIdx.clear();
     nodeArr.forEach((n: any, idx: any) => {
       mapNodeKeyIdx.set(n.key, idx);
     });
-  }
+  };
 
-  function refreshLinkIndex(linkArr: any) {
+  const refreshLinkIndex = (linkArr: any) => {
     mapLinkKeyIdx.clear();
     linkArr.forEach((l: any, idx: any) => {
       mapLinkKeyIdx.set(l.key, idx);
     });
-  }
+  };
 
-  function handleDiagramEvent(e: any) {
+  refreshNodeIndex(diagramData.nodeDataArray);
+  refreshLinkIndex(diagramData.linkDataArray);
+
+  const handleDiagramEvent = (e: any) => {
     const name = e.name;
     switch (name) {
       case "ChangedSelection": {
@@ -67,9 +82,9 @@ export default function App() {
       default:
         break;
     }
-  }
+  };
 
-  function handleModelChange(obj: any) {
+  const handleModelChange = (obj: any) => {
     const insertedNodeKeys = obj.insertedNodeKeys;
     const modifiedNodeData = obj.modifiedNodeData;
     const removedNodeKeys = obj.removedNodeKeys;
@@ -167,16 +182,114 @@ export default function App() {
 
       draft.skipsDiagramUpdate = true; // the GoJS model already knows about these updates
     });
-  }
+  };
+
+  const handleLinkChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const diagram: go.Diagram | null | undefined =
+      diagramRef?.current?.getDiagram();
+
+    if (!diagram) return;
+
+    diagram.startTransaction();
+
+    const dModel = diagram.model as go.GraphLinksModel;
+    const selNode = diagram?.selection.first() as go.Node;
+
+    if (!selNode) return;
+
+    // Add Link
+    if (selNode && event.target.checked) {
+      dModel.addLinkData({ from: selNode.key, to: event.target.name });
+    } else {
+      // Remove Link
+      const links = selNode.findLinksOutOf();
+
+      var it = links.iterator;
+      while (it.next()) {
+        const item = it.value;
+        if (item.data.to === event.target.name) {
+          dModel.removeLinkData(item.data);
+        }
+      }
+    }
+
+    diagram.commitTransaction();
+  };
+
+  const getImportNodeLinks = (importNode: go.Part) => {
+    const docletTypeNodes = diagramData.linkDataArray?.filter((link: any) => {
+      return link.from === importNode.key;
+    });
+    return docletTypeNodes;
+  };
+
+  const infoDrawerBody = () => {
+    const diagram: go.Diagram | null | undefined =
+      diagramRef?.current?.getDiagram();
+
+    const selNode = diagram?.selection.first();
+
+    const docletTypes = diagramData.nodeDataArray?.filter((nodeTypes: any) => {
+      return nodeTypes.category === goJsCategory.DocletTypeNode;
+    });
+
+    if (
+      selNode &&
+      docletTypes &&
+      selNode.category === goJsCategory.ImportNode
+    ) {
+      const importNodeLinks = getImportNodeLinks(selNode);
+
+      return (
+        <FormControl component="fieldset">
+          <FormLabel component="legend">
+            <span>Create or Remove Link from Import Node&nbsp;</span>
+            <strong>{selNode.data.text}</strong>
+            <span>&nbsp;into Doclet Type Node</span>
+          </FormLabel>
+          <FormGroup aria-label="position">
+            {docletTypes.map((docletType: any) => {
+              let checked = false;
+
+              const linked = importNodeLinks.find((link: any) => {
+                return link.to === docletType.key;
+              });
+
+              if (linked) {
+                checked = true;
+              }
+
+              return (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      onChange={handleLinkChange}
+                      name={docletType.key}
+                      checked={checked}
+                    />
+                  }
+                  value={docletType.key}
+                  label={docletType.title}
+                />
+              );
+            })}
+          </FormGroup>
+        </FormControl>
+      );
+    }
+  };
 
   return (
     <GoJSWrapper
-      nodeDataArray={diagramData.nodeDataArray}
+      diagramRef={diagramRef}
+      drawerBody={infoDrawerBody()}
+      paletteRef={paletteRef}
       linkDataArray={diagramData.linkDataArray}
-      skipsDiagramUpdate={diagramData.skipsDiagramUpdate}
-      paletteData={diagramData.paletteData}
+      nodeDataArray={diagramData.nodeDataArray}
       onDiagramEvent={handleDiagramEvent}
       onModelChange={handleModelChange}
+      paletteData={diagramData.paletteData}
+      skipsDiagramUpdate={diagramData.skipsDiagramUpdate}
     />
   );
 }

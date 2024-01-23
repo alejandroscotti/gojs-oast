@@ -202,7 +202,6 @@ const useGoJsTemplateTemplates = (go: any) => {
     ),
     {
       defaultAlignment: go.Spot.Left,
-      selectionAdorned: false,
       height: 25,
     },
     $(
