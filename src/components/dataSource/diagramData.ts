@@ -34,6 +34,27 @@ export const diagramDataInit = {
       title: "Communications Plan",
     },
     {
+      category: "SpacerNode",
+      key: "111",
+      id: "111",
+    },
+    {
+      category: "ImportNode",
+      state: "Diagram",
+      key: "sds1",
+      id: "sds1",
+      text: "PCD",
+      isLayoutPositioned: true,
+    },
+    {
+      category: "ImportNode",
+      state: "Diagram",
+      key: "sds2",
+      id: "sds2",
+      text: "neo4jQuery",
+      isLayoutPositioned: true,
+    },
+    {
       category: "DropDocletType",
       key: "append",
       id: "append",
@@ -58,4 +79,4 @@ export const diagramDataInit = {
       to: "append",
     },
   ],
-};
+}
