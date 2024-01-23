@@ -5,6 +5,9 @@
   "keywords": [],
   "main": "src/index.js",
   "dependencies": {
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.4",
+    "@mui/material": "^5.15.4",
     "gojs": "^2.1.45",
     "gojs-react": "^1.0.10",
     "immer": "^9.0.5",

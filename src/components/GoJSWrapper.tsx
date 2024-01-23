@@ -2,7 +2,7 @@
  *  Copyright (C) 1998-2022 by Northwoods Software Corporation. All Rights Reserved.
  */
 
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import * as go from "gojs"
 import { ReactDiagram, ReactPalette } from "gojs-react"
 import useGoJsTemplateTemplates from "./useGoJsTemplates"
@@ -10,6 +10,7 @@ import { GoJsNodeState } from "./dataSource/goJsNodeState"
 import { useAlignImportNodes } from "./useAlignImportNodes"
 import "./GoJSWrapper.css"
 import { CustomTreeLayout } from "./customTreeLayout"
+import OastInfoDrawer from "./OastInfoDrawer/OastInfoDrawer"
 
 const goJsCategory = {
   DiagramDocletType: "DiagramDocletType",
@@ -27,19 +28,18 @@ const goJsCategory = {
 
 export default function GoJSWrapper(props: any) {
   const {
-    paletteData,
-    onDiagramEvent,
-    nodeDataArray,
+    diagramRef,
+    drawerBody,
     linkDataArray,
-    skipsDiagramUpdate,
+    nodeDataArray,
+    onDiagramEvent,
     onModelChange,
+    paletteData,
+    paletteRef,
+    skipsDiagramUpdate,
   } = props
 
   const { alignNodes } = useAlignImportNodes(go, goJsCategory)
-
-  // Defined React GoJs Refs
-  const diagramRef = useRef<ReactDiagram>(null)
-  const paletteRef = useRef<ReactPalette>(null)
 
   // Destructure Templates
   const {
@@ -63,7 +63,7 @@ export default function GoJSWrapper(props: any) {
         diagram.removeDiagramListener("ChangedSelection", onDiagramEvent)
       }
     }
-  }, [onDiagramEvent])
+  }, [onDiagramEvent, diagramRef])
 
   const handleDocletTypeDrop = (
     newNode: go.Node,
@@ -130,8 +130,13 @@ export default function GoJSWrapper(props: any) {
     dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
       if (dNode.key === newNode.key) {
         dModel.set(dNode, "state", GoJsNodeState.Diagram)
-        //dModel.set(dNode, "location", new go.Point(0, 0));
+        dModel.set(dNode, "isSelected", true)
         // dModel.set(dNode, "isLayoutPositioned", false) :TODO
+        const Node = diagram.findNodeForKey(dNode.key)
+
+        if (Node) {
+          Node.isSelected = true
+        }
       }
     })
 
@@ -364,6 +369,7 @@ export default function GoJSWrapper(props: any) {
         onModelChange={onModelChange}
         skipsDiagramUpdate={skipsDiagramUpdate}
       />
+      <OastInfoDrawer bodyContent={drawerBody} open={true} />
     </div>
   )
 }
