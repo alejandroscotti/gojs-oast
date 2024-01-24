@@ -28,10 +28,14 @@ const goJsCategory = {
 
 export default function GoJSWrapper(props: any) {
   const {
-    paletteData,
-    onDiagramEvent,
-    nodeDataArray,
+    diagramRef,
+    drawerBody,
     linkDataArray,
+    nodeDataArray,
+    onDiagramEvent,
+    onModelChange,
+    paletteData,
+    paletteRef,
     skipsDiagramUpdate,
   } = props
 
@@ -425,6 +429,7 @@ export default function GoJSWrapper(props: any) {
         onModelChange={onModelChange}
         skipsDiagramUpdate={skipsDiagramUpdate}
       />
+      <OastInfoDrawer bodyContent={drawerBody} open={true} />
     </div>
   )
 }
