@@ -3,7 +3,7 @@
  */
 
 import { useImmer } from "use-immer";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { ReactDiagram, ReactPalette } from "gojs-react";
 import * as go from "gojs";
 import {
@@ -248,7 +248,7 @@ export default function App() {
             <span>&nbsp;into Doclet Type Node</span>
           </FormLabel>
           <FormGroup aria-label="position">
-            {docletTypes.map((docletType: any) => {
+            {docletTypes.map((docletType: any, idx: number) => {
               let checked = false;
 
               const linked = importNodeLinks.find((link: any) => {
@@ -261,6 +261,7 @@ export default function App() {
 
               return (
                 <FormControlLabel
+                  key={idx}
                   control={
                     <Checkbox
                       onChange={handleLinkChange}
