@@ -276,6 +276,10 @@ export default function GoJSWrapper(props: any) {
     const diagram = $(go.Diagram, {
       "undoManager.isEnabled": true, // must be set to allow for model change listening
       // 'undoManager.maxHistoryLength': 0,  // uncomment disable undo/redo functionality
+      // layout: $(go.TreeLayout, {
+      //   angle: 90,
+      //   layerSpacing: 10,
+      // }), // CustomTreeLayout
       layout: $(CustomTreeLayout),
       model: $(go.GraphLinksModel, {
         linkKeyProperty: "key", // IMPORTANT! must be defined for merges and data sync when using GraphLinksModel

@@ -44,7 +44,6 @@ export const diagramDataInit = {
       key: "sds1",
       id: "sds1",
       text: "PCD",
-      isLayoutPositioned: true,
     },
     {
       category: "ImportNode",
@@ -52,7 +51,6 @@ export const diagramDataInit = {
       key: "sds2",
       id: "sds2",
       text: "neo4jQuery",
-      isLayoutPositioned: true,
     },
     {
       category: "DropDocletType",
@@ -66,7 +64,7 @@ export const diagramDataInit = {
       id: "fc386d42",
       state: "Diagram",
       text: "R Script",
-      isLayoutPositioned: true,
+      //  isLayoutPositioned: false,
     },
   ],
   linkDataArray: [
