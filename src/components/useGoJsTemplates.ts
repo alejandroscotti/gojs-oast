@@ -1,41 +1,94 @@
-import { GoJsNodeState } from "./dataSource/goJsNodeState";
-import * as go from "gojs";
+import { GoJsNodeState } from "./dataSource/goJsNodeState"
+import * as go from "gojs"
 
 const useGoJsTemplateTemplates = (go: any) => {
-  const $ = go.GraphObject.make;
+  const $ = go.GraphObject.make
+
+  const spacerNode = $(
+    go.Node,
+    "Auto",
+    { movable: false, selectable: false },
+    $(
+      go.Shape,
+      // new go.Binding("fill", "white"),
+      // new go.Binding("stroke", "white"),
+      {
+        fill: "white",
+        background: "white",
+        strokeWidth: 0,
+        figure: "RoundedRectangle",
+        alignment: go.Spot.Center,
+        height: 25,
+      }
+    )
+    // $(
+    //   go.Panel,
+    //   {
+    //     stretch: go.GraphObject.Horizontal,
+    //     alignment: go.Spot.Center,
+    //   },
+    //   "Horizontal",
+    //   $(
+    //     go.TextBlock,
+    //     {
+    //       margin: new go.Margin(2, 10, 0, 5),
+    //       font: "bold 10pt Barlow, sans-serif",
+    //     },
+    //     new go.Binding("text", "title")
+    //   ),
+    //   $(
+    //     "Button",
+    //     new go.Binding(
+    //       "visible",
+    //       "",
+    //       (ev: go.ObjectData) => ev.state === GoJsNodeState.Diagram
+    //     ),
+    //     {
+    //       column: 1,
+    //       "ButtonBorder.figure": "Circle",
+    //     },
+    //     $(go.Shape, "XLine", {
+    //       width: 8,
+    //       height: 8,
+    //       fill: "white",
+    //       click: (ev: any, obj: any) => alert("hola"),
+    //     })
+    //   )
+    // )
+  )
 
   const docletTypeNodes = $(
     go.Node,
     "Auto",
     { movable: false },
     new go.Binding("copyable", "", (ev: go.ObjectData) => {
-      return ev.state !== GoJsNodeState.Copied;
+      return ev.state !== GoJsNodeState.Copied
     }),
     $(
       go.Shape,
       new go.Binding("fill", "", (ev: go.ObjectData) => {
-        if (ev.state === GoJsNodeState.Copied) return "#ccc";
+        if (ev.state === GoJsNodeState.Copied) return "#ccc"
 
         if (
           ev.state === GoJsNodeState.Palette ||
           ev.state === GoJsNodeState.Diagram
         )
-          return "white";
+          return "white"
       }),
       new go.Binding("stroke", "", (ev: go.ObjectData) => {
-        if (ev.state === GoJsNodeState.Copied) return "#ccc";
+        if (ev.state === GoJsNodeState.Copied) return "#ccc"
 
         if (
           ev.state === GoJsNodeState.Palette ||
           ev.state === GoJsNodeState.Diagram
         )
-          return "#1776D2";
+          return "#1776D2"
       }),
       {
         strokeWidth: 1,
         figure: "RoundedRectangle",
         alignment: go.Spot.Center,
-      },
+      }
     ),
     $(
       go.Panel,
@@ -50,14 +103,14 @@ const useGoJsTemplateTemplates = (go: any) => {
           margin: new go.Margin(2, 10, 0, 5),
           font: "bold 10pt Barlow, sans-serif",
         },
-        new go.Binding("text", "title"),
+        new go.Binding("text", "title")
       ),
       $(
         "Button",
         new go.Binding(
           "visible",
           "",
-          (ev: go.ObjectData) => ev.state === GoJsNodeState.Diagram,
+          (ev: go.ObjectData) => ev.state === GoJsNodeState.Diagram
         ),
         {
           column: 1,
@@ -68,10 +121,10 @@ const useGoJsTemplateTemplates = (go: any) => {
           height: 8,
           fill: "white",
           click: (ev: any, obj: any) => alert("hola"),
-        }),
-      ),
-    ),
-  );
+        })
+      )
+    )
+  )
 
   const linkTemplate = $(
     go.Link,
@@ -82,8 +135,8 @@ const useGoJsTemplateTemplates = (go: any) => {
       corner: 5,
     },
     $(go.Shape, { isPanelMain: true, strokeWidth: 1 }),
-    $(go.Shape, { toArrow: "OpenTriangle", strokeWidth: 1 }),
-  );
+    $(go.Shape, { toArrow: "OpenTriangle", strokeWidth: 1 })
+  )
 
   const dropDocletType = $(
     go.Node,
@@ -91,12 +144,12 @@ const useGoJsTemplateTemplates = (go: any) => {
     {
       movable: false,
       mouseDragEnter: (ev: go.InputEvent, obj: go.Node) => {
-        const node = obj.elt(0) as go.Shape;
-        if (node) node.stroke = "#1776D2";
+        const node = obj.elt(0) as go.Shape
+        if (node) node.stroke = "#1776D2"
       },
       mouseDragLeave: (ev: go.InputEvent, obj: go.Node) => {
-        const node = obj.elt(0) as go.Shape;
-        if (node) node.stroke = "#ffc74c";
+        const node = obj.elt(0) as go.Shape
+        if (node) node.stroke = "#ffc74c"
       },
     },
     $(go.Shape, {
@@ -111,9 +164,9 @@ const useGoJsTemplateTemplates = (go: any) => {
         margin: new go.Margin(3, 0, 3, 0),
         alignment: go.Spot.Center,
       },
-      new go.Binding("text", "text"),
-    ),
-  );
+      new go.Binding("text", "text")
+    )
+  )
 
   /**
    * Document Category Bar
@@ -147,9 +200,9 @@ const useGoJsTemplateTemplates = (go: any) => {
         stroke: "white",
         width: 180,
         margin: new go.Margin(4, 0, 0, 2),
-      }),
-    ),
-  );
+      })
+    )
+  )
 
   /**
    * Imports Item
@@ -182,9 +235,9 @@ const useGoJsTemplateTemplates = (go: any) => {
         stroke: "white",
         width: 180,
         margin: new go.Margin(4, 0, 0, 2),
-      }),
-    ),
-  );
+      })
+    )
+  )
 
   /**
    * Import Item
@@ -192,13 +245,15 @@ const useGoJsTemplateTemplates = (go: any) => {
   const importNode = $(
     go.Node,
     "Auto",
-    { movable: false, isLayoutPositioned: false },
+    { movable: false },
     new go.Binding("isLayoutPositioned", "isLayoutPositioned"),
-    new go.Binding("position", "position"),
+    new go.Binding("position", "position", go.Point.parse).makeTwoWay(
+      go.Point.stringify
+    ),
     new go.Binding(
       "copyable",
       "",
-      (ev: any) => ev.state !== GoJsNodeState.Copied,
+      (ev: any) => ev.state !== GoJsNodeState.Copied
     ),
     {
       defaultAlignment: go.Spot.Left,
@@ -211,14 +266,14 @@ const useGoJsTemplateTemplates = (go: any) => {
         figure: "RoundedRectangle",
       },
       new go.Binding("fill", "", (ev: any) => {
-        if (ev.state === GoJsNodeState.Copied) return "#ccc";
+        if (ev.state === GoJsNodeState.Copied) return "#ccc"
 
         if (
           ev.state === GoJsNodeState.Palette ||
           ev.state === GoJsNodeState.Diagram
         )
-          return "#1776D2";
-      }),
+          return "#1776D2"
+      })
     ),
     $(
       go.Panel,
@@ -240,7 +295,7 @@ const useGoJsTemplateTemplates = (go: any) => {
         new go.Binding(
           "visible",
           "",
-          (ev: any) => ev.state === GoJsNodeState.Diagram,
+          (ev: any) => ev.state === GoJsNodeState.Diagram
         ),
         {
           column: 1,
@@ -250,10 +305,10 @@ const useGoJsTemplateTemplates = (go: any) => {
           width: 8,
           height: 8,
           click: (ev: any, obj: any) => alert("hola"),
-        }),
-      ),
-    ),
-  );
+        })
+      )
+    )
+  )
 
   /**
    * Return All Templates
@@ -265,7 +320,8 @@ const useGoJsTemplateTemplates = (go: any) => {
     imports,
     importNode,
     paletteDocletGroup,
-  };
-};
+    spacerNode,
+  }
+}
 
-export default useGoJsTemplateTemplates;
+export default useGoJsTemplateTemplates

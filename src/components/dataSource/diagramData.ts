@@ -34,6 +34,25 @@ export const diagramDataInit = {
       title: "Communications Plan",
     },
     {
+      category: "SpacerNode",
+      key: "111",
+      id: "111",
+    },
+    {
+      category: "ImportNode",
+      state: "Diagram",
+      key: "sds1",
+      id: "sds1",
+      text: "PCD",
+    },
+    {
+      category: "ImportNode",
+      state: "Diagram",
+      key: "sds2",
+      id: "sds2",
+      text: "neo4jQuery",
+    },
+    {
       category: "DropDocletType",
       key: "append",
       id: "append",
@@ -45,7 +64,7 @@ export const diagramDataInit = {
       id: "fc386d42",
       state: "Diagram",
       text: "R Script",
-      isLayoutPositioned: true,
+      //  isLayoutPositioned: false,
     },
   ],
   linkDataArray: [
@@ -75,4 +94,4 @@ export const diagramDataInit = {
       key: 5,
     },
   ],
-};
+}
