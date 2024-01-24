@@ -2,14 +2,12 @@
  *  Copyright (C) 1998-2022 by Northwoods Software Corporation. All Rights Reserved.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import * as go from "gojs";
 import { ReactDiagram, ReactPalette } from "gojs-react";
 import useGoJsTemplateTemplates from "./useGoJsTemplates";
 import { GoJsNodeState } from "./dataSource/goJsNodeState";
-import { useAlignImportNodes } from "./useAlignImportNodes";
 import "./GoJSWrapper.css";
-import OastInfoDrawer from "./OastInfoDrawer/OastInfoDrawer";
 
 const goJsCategory = {
   DiagramDocletType: "DiagramDocletType",
@@ -26,18 +24,37 @@ const goJsCategory = {
 
 export default function GoJSWrapper(props: any) {
   const {
-    diagramRef,
-    drawerBody,
-    linkDataArray,
-    nodeDataArray,
-    onDiagramEvent,
-    onModelChange,
     paletteData,
-    paletteRef,
+    onDiagramEvent,
+    nodeDataArray,
+    linkDataArray,
     skipsDiagramUpdate,
+    onModelChange,
   } = props;
 
-  const { alignNodes } = useAlignImportNodes(go, goJsCategory);
+  // Defined React GoJs Refs
+  const diagramRef = useRef<ReactDiagram>(null);
+  const paletteRef = useRef<ReactPalette>(null);
+
+  // Returns position of the Node
+  /* const handlePosition = (nodeData: go.ObjectData, Node: go.Node) => {
+    // Declare Diagram & Palette
+    const palette: go.Palette | null | undefined =
+      paletteRef?.current?.getPalette();
+
+    const diagram: go.Diagram | null | undefined =
+      diagramRef?.current?.getDiagram();
+
+    // NULL checks
+    if (!diagram || !palette || !nodeData || !Node) return;
+
+    if (
+      nodeData.state === GoJsNodeState.Palette &&
+      nodeData.category === goJsCategory.ImportNode
+    ) {
+      return new go.Point(1500, 1500);
+    }
+  }; */
 
   // Destructure Templates
   const {
@@ -60,7 +77,7 @@ export default function GoJSWrapper(props: any) {
         diagram.removeDiagramListener("ChangedSelection", onDiagramEvent);
       }
     };
-  }, [onDiagramEvent, diagramRef]);
+  }, [onDiagramEvent]);
 
   const handleDocletTypeDrop = (
     newNode: go.Node,
@@ -111,7 +128,7 @@ export default function GoJSWrapper(props: any) {
     palette.commitTransaction();
   };
 
-  const handleImportNodeDrop = async (
+  const handleImportNodeDrop = (
     newNode: go.Node,
     diagram: go.Diagram,
     palette: go.Palette,
@@ -127,13 +144,8 @@ export default function GoJSWrapper(props: any) {
     dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
       if (dNode.key === newNode.key) {
         dModel.set(dNode, "state", GoJsNodeState.Diagram);
-        dModel.set(dNode, "isSelected", true);
+        dModel.set(dNode, "location", new go.Point(-200, -200));
         dModel.set(dNode, "isLayoutPositioned", false);
-        const Node = diagram.findNodeForKey(dNode.key);
-
-        if (Node) {
-          Node.isSelected = true;
-        }
       }
     });
 
@@ -144,21 +156,48 @@ export default function GoJSWrapper(props: any) {
       }
     });
 
-    await alignNodes(diagram);
-
     diagram.commitTransaction();
     palette.commitTransaction();
   };
 
   const linkMouseDrop = (
     newNode: go.Node,
-    targetNode: go.Node,
+    link: go.Link,
     diagram: go.Diagram,
     palette: go.Palette,
   ) => {
     diagram.startTransaction();
     palette.startTransaction();
+  
+    const dModel = diagram.model as go.GraphLinksModel;
+    const pModel = palette.model as go.GraphLinksModel;
 
+    const fromKey = link.data.from;
+    // check nodeDataArray to see if fromKey is of category ImportNode
+    const fromNode = dModel.nodeDataArray.find((node: go.ObjectData) => node.key === fromKey);
+    if (fromNode?.category === goJsCategory.ImportNode) {
+      // remove new node
+      dModel.removeNodeData(newNode.data);
+      return;
+    }
+    // Remove the existing link
+    dModel.removeLinkData(link.data);
+  
+    // Add the new node to the diagram
+    dModel.set(newNode, "state", GoJsNodeState.Diagram);
+    // Create two new links
+    const newLink1 = { from: link?.fromNode?.key, to: newNode.data.key };
+    const newLink2 = { from: newNode.data.key, to: link?.toNode?.key };
+    dModel.addLinkData(newLink1);
+    dModel.addLinkData(newLink2);
+  
+    // update palette node state
+    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
+      if (pNode.key === newNode.data.key) {
+        pModel.set(pNode, "state", GoJsNodeState.Copied);
+      }
+    });
+  
     diagram.commitTransaction();
     palette.commitTransaction();
   };
@@ -180,21 +219,21 @@ export default function GoJSWrapper(props: any) {
     const connectedLinks = targetNode.findLinksConnected();
     const linksToUpdate: go.ObjectData = [];
     connectedLinks.each((link: go.Link) => {
-      linksToUpdate.push({ from: link.fromNode?.key, to: link.toNode?.key });
+      linksToUpdate.push({from: link.fromNode?.key, to: link.toNode?.key});
     });
 
     // Remove Existing Node
     diagram.remove(targetNode);
     dModel.set(newNode, "state", GoJsNodeState.Diagram);
 
-    // Update links to connect to new node
+    // Update links to connect to/from new node
     linksToUpdate.forEach((link: go.ObjectData) => {
       if (link.from === targetNode.data.key) {
         dModel.removeLinkData(link);
-        dModel.addLinkData({ from: newNode.data.key, to: link.to });
+        dModel.addLinkData({ from: newNode.data.key, fromPort: 'In', to: link.to, toPort: 'In' });
       } else if (link.to === targetNode.data.key) {
         dModel.removeLinkData(link);
-        dModel.addLinkData({ from: link.from, to: newNode.data.key });
+        dModel.addLinkData({ from: link.from, fromPort: 'In', to: newNode.data.key, toPort: 'In' });
       }
     });
 
@@ -227,7 +266,7 @@ export default function GoJSWrapper(props: any) {
 
     // Declare Nodes
     const newNode: go.Node = ev.diagram?.selection.first() as go.Node;
-    const targetNode = diagram.findPartAt(
+    const targetNode: any = diagram.findPartAt(
       new go.Point(newNode.position.x, newNode.position.y),
     ) as go.Node;
 
@@ -266,7 +305,25 @@ export default function GoJSWrapper(props: any) {
       return;
     }
   };
-
+  const greyPaletteNodesOnLoad = () => {
+    // Get the model for the palette 
+    const paletteModel = paletteRef?.current?.getPalette()?.model as go.GraphLinksModel;
+    const diagramModel = diagramRef?.current?.getDiagram()?.model as go.GraphLinksModel;
+    const diagramNodeTitles: string[] = [];
+    // Iterate over the nodes in the diagram
+    diagramModel?.nodeDataArray.forEach((diagramNode: go.ObjectData) => {
+      // Find the corresponding node in the palette
+      diagramNodeTitles.push(diagramNode.title);
+    });
+    // Iterate over the nodes in the palette
+    paletteModel.nodeDataArray.forEach((paletteNode: go.ObjectData) => {
+      // ignore imports category
+      if (paletteNode.category === "ImportNode") return;
+      // change state to copied if the node is in the diagram
+      if (diagramNodeTitles.includes(paletteNode.title)) {
+        paletteModel.set(paletteNode, "state", GoJsNodeState.Copied);
+    }});
+  }
   function initDiagram() {
     const $ = go.GraphObject.make;
     // set your license key here before creating the diagram: go.Diagram.licenseKey = "...";
@@ -307,7 +364,13 @@ export default function GoJSWrapper(props: any) {
       "ExternalObjectsDropped",
       externalObjectsDropped,
     );
-
+    /* 
+      "InitialLayoutCompleted", the whole diagram layout has updated for the first time 
+      since a major change to the Diagram, such as replacing the Model;
+      if you make any changes, you do not need to perform a transaction.
+      - https://gojs.net/latest/api/symbols/DiagramEvent.html
+    */
+    diagram.addDiagramListener("InitialLayoutCompleted", greyPaletteNodesOnLoad);
     return diagram;
   }
 
@@ -371,7 +434,6 @@ export default function GoJSWrapper(props: any) {
         onModelChange={onModelChange}
         skipsDiagramUpdate={skipsDiagramUpdate}
       />
-      <OastInfoDrawer bodyContent={drawerBody} open={true} />
     </div>
   );
 }
