@@ -177,7 +177,7 @@ export default function GoJSWrapper(props: any) {
     dModel.removeLinkData(link.data);
   
     // Add the new node to the diagram
-    dModel.set(newNode, "state", GoJsNodeState.Diagram);
+    dModel.set(newNode.data, "state", GoJsNodeState.Diagram);
     // Create two new links
     const newLink1 = { from: link?.fromNode?.key, to: newNode.data.key };
     const newLink2 = { from: newNode.data.key, to: link?.toNode?.key };
@@ -217,16 +217,16 @@ export default function GoJSWrapper(props: any) {
 
     // Remove Existing Node
     diagram.remove(targetNode)
-    dModel.set(newNode, "state", GoJsNodeState.Diagram)
+    dModel.set(newNode.data, "state", GoJsNodeState.Diagram)
 
     // Update links to connect to/from new node
     linksToUpdate.forEach((link: go.ObjectData) => {
       if (link.from === targetNode.data.key) {
         dModel.removeLinkData(link)
-        dModel.addLinkData({ from: newNode.data.key, to: link.to })
+        dModel.addLinkData({ from: newNode.data.key, fromPort: "bottom", to: link.to, toPort: "top" })
       } else if (link.to === targetNode.data.key) {
         dModel.removeLinkData(link)
-        dModel.addLinkData({ from: link.from, to: newNode.data.key })
+        dModel.addLinkData({ from: link.from, fromPort: "bottom", to: newNode.data.key, toPort: "top" })
       }
     })
 
@@ -329,6 +329,8 @@ export default function GoJSWrapper(props: any) {
       // }), // CustomTreeLayout
       layout: $(CustomTreeLayout),
       model: $(go.GraphLinksModel, {
+        linkFromPortIdProperty: "fromPort",
+        linkToPortIdProperty: "toPort",
         linkKeyProperty: "key", // IMPORTANT! must be defined for merges and data sync when using GraphLinksModel
         // positive keys for nodes
         makeUniqueKeyFunction: (m: any, data: any) => {

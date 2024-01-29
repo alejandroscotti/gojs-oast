@@ -59,72 +59,80 @@ const useGoJsTemplateTemplates = (go: any) => {
 
   const docletTypeNodes = $(
     go.Node,
-    "Auto",
+    "Spot", // Changed to 'Spot' to allow precise port positioning
     { movable: false },
-    new go.Binding("copyable", "", (ev: go.ObjectData) => {
-      return ev.state !== GoJsNodeState.Copied
-    }),
-    $(
-      go.Shape,
-      new go.Binding("fill", "", (ev: go.ObjectData) => {
-        if (ev.state === GoJsNodeState.Copied) return "#ccc"
+    new go.Binding("copyable", "", (data: any) => data.state !== GoJsNodeState.Copied),
 
-        if (
-          ev.state === GoJsNodeState.Palette ||
-          ev.state === GoJsNodeState.Diagram
-        )
-          return "white"
-      }),
-      new go.Binding("stroke", "", (ev: go.ObjectData) => {
-        if (ev.state === GoJsNodeState.Copied) return "#ccc"
-
-        if (
-          ev.state === GoJsNodeState.Palette ||
-          ev.state === GoJsNodeState.Diagram
-        )
-          return "#1776D2"
-      }),
-      {
-        strokeWidth: 1,
-        figure: "RoundedRectangle",
-        alignment: go.Spot.Center,
-      }
-    ),
-    $(
-      go.Panel,
-      {
-        stretch: go.GraphObject.Horizontal,
-        alignment: go.Spot.Center,
-      },
-      "Horizontal",
-      $(
-        go.TextBlock,
-        {
-          margin: new go.Margin(2, 10, 0, 5),
-          font: "bold 10pt Barlow, sans-serif",
-        },
-        new go.Binding("text", "title")
-      ),
-      $(
-        "Button",
-        new go.Binding(
-          "visible",
-          "",
-          (ev: go.ObjectData) => ev.state === GoJsNodeState.Diagram
+    // Main content of the node wrapped in an Auto Panel
+    $(go.Panel, "Auto", 
+        $(go.Shape, "RoundedRectangle", 
+            new go.Binding("fill", "state", (state: any) => state === GoJsNodeState.Copied ? "#ccc" : (state === GoJsNodeState.Palette || state === GoJsNodeState.Diagram ? "white" : null)),
+            new go.Binding("stroke", "state", (state: any) => state === GoJsNodeState.Copied ? "#ccc" : (state === GoJsNodeState.Palette || state === GoJsNodeState.Diagram ? "#1776D2" : null)),
+            {
+              strokeWidth: 1,
+              width: 200,
+              maxSize: new go.Size(200, NaN),
+              alignment: go.Spot.Center,
+            }
         ),
-        {
-          column: 1,
-          "ButtonBorder.figure": "Circle",
-        },
-        $(go.Shape, "XLine", {
-          width: 8,
-          height: 8,
-          fill: "white",
-          click: (ev: any, obj: any) => alert("hola"),
-        })
-      )
+        $(go.Panel, "Horizontal",
+            { stretch: go.GraphObject.Horizontal, alignment: go.Spot.Center },
+            "Horizontal",
+            $(go.TextBlock, {
+                margin: new go.Margin(2, 10, 0, 5),
+                width: 150,
+                wrap: go.TextBlock.WrapDesiredSize,
+                textAlign: 'center',
+                font: "bold 10pt Barlow, sans-serif",
+            }, new go.Binding("text", "title")),
+            $("Button", new go.Binding("visible", "state", (state: any) => state === GoJsNodeState.Diagram), {
+                column: 1,
+                "ButtonBorder.figure": "Circle",
+            }, $(go.Shape, "XLine", {
+                width: 8,
+                height: 8,
+                fill: "white",
+                click: (ev: any, obj: any) => alert("hola"),
+            }))
+        )
+    ),
+
+    // Conditional Ports
+    $(go.Shape, "Circle", {
+        portId: "left",
+        alignment: new go.Spot(0, 0.5),
+        desiredSize: new go.Size(8, 8),
+        fill: "#1776D2",
+        fromLinkable: true,
+        toLinkable: true,
+        visible: false,
+      },
+      new go.Binding("visible", "state", (state: any) => state === GoJsNodeState.Diagram)
+    ),
+    $(go.Shape, "Circle", {
+        portId: "top",
+        alignment: go.Spot.TopCenter,
+        desiredSize: new go.Size(8, 8),
+        fill: "#1776D2",
+        fromLinkable: true,
+        toLinkable: true,
+        visible: false,
+      },
+      new go.Binding("visible", "state", (state: any) => state === GoJsNodeState.Diagram)
+    ),
+    $(go.Shape, "Circle", {
+        portId: "bottom",
+        alignment: go.Spot.BottomCenter,
+        desiredSize: new go.Size(8, 8),
+        fill: "#1776D2",
+        fromLinkable: true,
+        toLinkable: true,
+        visible: false,
+      },
+      new go.Binding("visible", "state", (state: any) => state === GoJsNodeState.Diagram)
     )
-  )
+  );
+
 
   const linkTemplate = $(
     go.Link,
@@ -143,30 +151,28 @@ const useGoJsTemplateTemplates = (go: any) => {
     "Auto",
     {
       movable: false,
-      mouseDragEnter: (ev: go.InputEvent, obj: go.Node) => {
-        const node = obj.elt(0) as go.Shape
-        if (node) node.stroke = "#1776D2"
-      },
-      mouseDragLeave: (ev: go.InputEvent, obj: go.Node) => {
-        const node = obj.elt(0) as go.Shape
-        if (node) node.stroke = "#ffc74c"
-      },
     },
-    $(go.Shape, {
-      strokeWidth: 1,
-      stroke: "#ffc74c",
-      figure: "Ellipse",
+    $(go.Shape, "RoundedRectangle", { 
+      strokeWidth: 1, 
+      stroke: "#ffc74c", 
       fill: "#ffc74c",
     }),
-    $(
-      go.TextBlock,
-      {
-        margin: new go.Margin(3, 0, 3, 0),
-        alignment: go.Spot.Center,
-      },
-      new go.Binding("text", "text")
+    $(go.Panel, "Vertical", {
+      width: 200,
+      maxSize: new go.Size(200, NaN),
+    },
+      // Adjust the internal layout to match docletTypeNodes
+      $("Button", { visible: false }), // Invisible button to mimic layout
+      $(go.TextBlock,
+        {
+          margin: new go.Margin(2, 10, 0, 5), // Adjust margins to match docletTypeNodes
+          textAlign: "center",
+          font: "bold 10pt Barlow, sans-serif"
+        },
+        new go.Binding("text", "text")
+      )
     )
-  )
+);
 
   /**
    * Document Category Bar
