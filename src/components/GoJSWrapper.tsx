@@ -71,48 +71,82 @@ export default function GoJSWrapper(props: any) {
     diagram: go.Diagram,
     palette: go.Palette
   ) => {
-    // Declare Palette and Diagram Models
-    const dModel = diagram.model as go.GraphLinksModel
-    const pModel = palette.model as go.GraphLinksModel
+    const dModel = diagram.model as go.GraphLinksModel;
+    const pModel = palette.model as go.GraphLinksModel;
 
-    let targetLink: go.Link | null
-    let nextNode: go.Node | null
+    diagram.startTransaction("");
+    palette.startTransaction("");
 
-    diagram.startTransaction()
-    palette.startTransaction()
+    let targetLink;
+    let adjacentNode;
 
-    if (targetNode.key === "append") {
-      targetLink = targetNode.findLinksInto().first()
-      if (!targetLink) return
-      nextNode = targetLink.toNode
-      if (!nextNode) return
+    if (targetNode.key === "prepend") {
+      targetLink = targetNode.findLinksOutOf().first();
+      adjacentNode = targetLink?.toNode;
+    } else if (targetNode.key === "append") {
+      targetLink = targetNode.findLinksInto().first();
+      adjacentNode = targetLink?.fromNode;
     } else {
-      targetLink = targetNode.findLinksOutOf().first()
-      if (!targetLink) return
-      nextNode = targetLink.toNode
-      if (!nextNode) return
+      diagram.commitTransaction();
+      palette.commitTransaction();
+      return;
     }
 
-    targetLink.toNode = newNode
-    dModel.addLinkData({ from: newNode.data.key, to: nextNode.data.key })
+    if (!targetLink || !adjacentNode) {
+      diagram.commitTransaction();
+      palette.commitTransaction();
+      return;
+    }
 
-    // Change Node state in Diagram Model
-    dModel.nodeDataArray.forEach((dNode: go.ObjectData) => {
-      if (dNode.key === newNode.key) {
-        dModel.set(dNode, "state", GoJsNodeState.Diagram)
+    // Remove the original link
+    dModel.removeLinkData(targetLink.data);
+
+    if (targetNode.key === "prepend") {
+      // New link from prepend node to new node
+      dModel.addLinkData({
+        from: targetNode.data.key,
+        fromPort: "prepend",
+        to: newNode.data.key,
+        toPort: "top"
+      });
+      // New link from new node to adjacent node
+      dModel.addLinkData({
+        from: newNode.data.key,
+        fromPort: "bottom",
+        to: adjacentNode.data.key,
+        toPort: "top"
+      });
+    } else if (targetNode.key === "append") {
+      // New link from adjacent node to new node
+      dModel.addLinkData({
+        from: adjacentNode.data.key,
+        fromPort: "bottom",
+        to: newNode.data.key,
+        toPort: "top"
+      });
+      // New link from new node to append node
+      dModel.addLinkData({
+        from: newNode.data.key,
+        fromPort: "bottom",
+        to: targetNode.data.key,
+        toPort: "append"
+      });
+    }
+
+    // Update newNode state in Diagram Model
+    dModel.set(newNode.data, "state", GoJsNodeState.Diagram);
+
+    // Update newNode state in Palette Model
+    pModel.nodeDataArray.forEach((pNode) => {
+      if (pNode.key === newNode.data.key) {
+        pModel.set(pNode, "state", GoJsNodeState.Copied);
       }
-    })
+    });
 
-    // Change Node state in Palette Model
-    pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
-      if (pNode.title === newNode.data.title) {
-        pModel.set(pNode, "state", GoJsNodeState.Copied)
-      }
-    })
+    diagram.commitTransaction();
+    palette.commitTransaction();
+  };
 
-    diagram.commitTransaction()
-    palette.commitTransaction()
-  }
 
   const handleImportNodeDrop = async (
     newNode: go.Node,
@@ -159,41 +193,66 @@ export default function GoJSWrapper(props: any) {
     diagram: go.Diagram,
     palette: go.Palette
   ) => {
-    diagram.startTransaction();
-    palette.startTransaction();
-  
+    diagram.startTransaction("");
+    palette.startTransaction("");
+
     const dModel = diagram.model as go.GraphLinksModel;
     const pModel = palette.model as go.GraphLinksModel;
 
     const fromKey = link.data.from;
-    // check nodeDataArray to see if fromKey is of category ImportNode
-    const fromNode = dModel.nodeDataArray.find((node: go.ObjectData) => node.key === fromKey);
-    if (fromNode?.category === goJsCategory.ImportNode) {
-      // remove new node
-      dModel.removeNodeData(newNode.data);
+    const toKey = link.data.to;
+
+    // Retrieve from and to nodes from the diagram
+    const fromNode = dModel.findNodeDataForKey(fromKey);
+    const toNode = dModel.findNodeDataForKey(toKey);
+    // Disallow dropping a node on a link connected to an import node
+    if (fromNode?.category === goJsCategory.ImportNode || toNode?.category === goJsCategory.ImportNode) {
+      diagram.remove(newNode);
+      diagram.commitTransaction();
+      palette.commitTransaction();
       return;
     }
+    // Determine appropriate ports for the new links
+    let fromPort = "bottom"; // Default port for fromNode
+    let toPort = "top";      // Default port for toNode
+    let newNodeFromPort = "top";    // Default port for newNode to connect from
+    let newNodeToPort = "bottom";   // Default port for newNode to connect to
+
+    if (fromNode?.key === "prepend") {
+      fromPort = "prepend";  // Prepend node connects from its "prepend" port
+      newNodeFromPort = "top"; // NewNode connects from its top port
+    }
+
+    if (toNode?.key === "append") {
+      toPort = "append"; // Append node connects to its "append" port
+      newNodeToPort = "bottom"; // NewNode connects to its bottom port
+    }
+
     // Remove the existing link
     dModel.removeLinkData(link.data);
-  
+
     // Add the new node to the diagram
     dModel.set(newNode.data, "state", GoJsNodeState.Diagram);
-    // Create two new links
-    const newLink1 = { from: link?.fromNode?.key, to: newNode.data.key };
-    const newLink2 = { from: newNode.data.key, to: link?.toNode?.key };
+
+    // Create two new links with appropriate ports
+    const newLink1 = { from: fromKey, fromPort: fromPort, to: newNode.data.key, toPort: newNodeFromPort };
+    const newLink2 = { from: newNode.data.key, fromPort: newNodeToPort, to: toKey, toPort: toPort };
     dModel.addLinkData(newLink1);
     dModel.addLinkData(newLink2);
-  
-    // update palette node state
+
+    // Update palette node state
     pModel.nodeDataArray.forEach((pNode: go.ObjectData) => {
       if (pNode.key === newNode.data.key) {
         pModel.set(pNode, "state", GoJsNodeState.Copied);
       }
     });
-  
+
     diagram.commitTransaction();
     palette.commitTransaction();
   };
+
+
+
 
   const handleReplaceExistingNodeDrop = (
     newNode: go.Node,
@@ -210,9 +269,9 @@ export default function GoJSWrapper(props: any) {
 
     // Find the links connected to the target node
     const connectedLinks = targetNode.findLinksConnected()
-    const linksToUpdate: go.ObjectData = []
+    const linksToUpdate: go.ObjectData[] = []
     connectedLinks.each((link: go.Link) => {
-      linksToUpdate.push({from: link.fromNode?.key, to: link.toNode?.key});
+      linksToUpdate.push(link.data);
     });
 
     // Remove Existing Node
@@ -221,12 +280,24 @@ export default function GoJSWrapper(props: any) {
 
     // Update links to connect to/from new node
     linksToUpdate.forEach((link: go.ObjectData) => {
-      if (link.from === targetNode.data.key) {
-        dModel.removeLinkData(link)
-        dModel.addLinkData({ from: newNode.data.key, fromPort: "bottom", to: link.to, toPort: "top" })
+      dModel.removeLinkData(link)
+      if (link.from === "prepend") {
+        dModel.addLinkData({ from: "prepend", fromPort: "prepend", to: newNode.data.key, toPort: "top", })
+      } else if (link.to === "append") {
+        dModel.addLinkData({ from: newNode.data.key, fromPort: "bottom", to: "append", toPort: "append", })
+      }
+      else if (link.from === targetNode.data.key) {
+          dModel.addLinkData({ from: newNode.data.key, fromPort: "bottom", to: link.to, toPort: "top" })
       } else if (link.to === targetNode.data.key) {
-        dModel.removeLinkData(link)
-        dModel.addLinkData({ from: link.from, fromPort: "bottom", to: newNode.data.key, toPort: "top" })
+        // first check if the link is connected to an import node
+        const toNode = dModel.nodeDataArray.find((node: go.ObjectData) => {
+          return node.key === link.from;
+        });
+        if (toNode?.category === goJsCategory.ImportNode) {
+          dModel.addLinkData({ from: link.from, fromPort: "import", to: newNode.data.key, toPort: "left" })
+        } else {
+          dModel.addLinkData({ from: link.from, fromPort: "bottom", to: newNode.data.key, toPort: "top" })
+        }
       }
     })
 
@@ -305,15 +376,12 @@ export default function GoJSWrapper(props: any) {
     const diagramNodeTitles: string[] = [];
     // Iterate over the nodes in the diagram
     diagramModel?.nodeDataArray.forEach((diagramNode: go.ObjectData) => {
-      // Find the corresponding node in the palette
-      diagramNodeTitles.push(diagramNode.title);
+      diagramNodeTitles.push(diagramNode.title || diagramNode.text);
     });
     // Iterate over the nodes in the palette
     paletteModel.nodeDataArray.forEach((paletteNode: go.ObjectData) => {
-      // ignore imports category
-      if (paletteNode.category === "ImportNode") return;
       // change state to copied if the node is in the diagram
-      if (diagramNodeTitles.includes(paletteNode.title)) {
+      if (diagramNodeTitles.includes(paletteNode.title || paletteNode.text)) {
         paletteModel.set(paletteNode, "state", GoJsNodeState.Copied);
     }});
   }
